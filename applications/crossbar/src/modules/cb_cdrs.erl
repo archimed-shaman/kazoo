@@ -111,7 +111,7 @@ validate(#cb_context{req_verb = ?HTTP_GET}=Context, CDRId) ->
 load_cdr_summary(#cb_context{req_nouns=[_, {?WH_ACCOUNTS_DB, [_]} | _]}=Context) ->
     lager:debug("loading cdrs for account ~s", [cb_context:account_id(Context)]),
     case create_view_options('undefined', Context) of
-        {'ok', ViewOptions} -> 
+        {'ok', ViewOptions} ->
             load_view(?CB_LIST
                       ,ViewOptions
                       ,cb_context:set_query_string(Context, wh_json:new()));
@@ -120,7 +120,7 @@ load_cdr_summary(#cb_context{req_nouns=[_, {?WH_ACCOUNTS_DB, [_]} | _]}=Context)
 load_cdr_summary(#cb_context{req_nouns=[_, {<<"users">>, [UserId] } | _]}=Context) ->
     lager:debug("loading cdrs for user ~s", [UserId]),
     case create_view_options(UserId, Context) of
-        {'ok', ViewOptions} -> 
+        {'ok', ViewOptions} ->
             load_view(?CB_LIST_BY_USER
                       ,ViewOptions
                       ,cb_context:set_query_string(Context, wh_json:new()));
@@ -146,24 +146,24 @@ load_view(View, ViewOptions, Context) ->
 -spec fetch_cdrs(ne_binary(), wh_proplist(), cb_context:context()) -> cb_context:context().
 fetch_cdrs(View, ViewOptions, Context) ->
     case {cdr_db(view_key_created_from(ViewOptions), Context)
-          ,cdr_db(view_key_created_to(ViewOptions), Context)} 
+          ,cdr_db(view_key_created_to(ViewOptions), Context)}
     of
         {Db, Db} -> fetch_cdrs([Db], View, ViewOptions, Context);
-        {PastDb, PresentDb} -> 
+        {PastDb, PresentDb} ->
             fetch_cdrs([PastDb, PresentDb], View, ViewOptions, Context)
     end.
 
 -spec fetch_cdrs(ne_binaries(), ne_binary(), wh_proplist(), cb_context:context()) -> cb_context:context().
 fetch_cdrs([], _, _, Context) -> Context;
-fetch_cdrs([Db|Dbs], View, ViewOptions, Context) -> 
+fetch_cdrs([Db|Dbs], View, ViewOptions, Context) ->
     C = crossbar_doc:load_view(View
                                ,ViewOptions
                                ,cb_context:set_account_db(Context, Db)
                                ,fun(JObj, JObjs) -> normalize_view_results(JObj, JObjs) end
-                              ),   
+                              ),
     case cb_context:resp_status(C) of
-        'success' ->            
-            JObjs = cb_context:doc(Context) 
+        'success' ->
+            JObjs = cb_context:doc(Context)
                 ++ cb_context:doc(C),
             fetch_cdrs(Dbs
                        ,View
@@ -195,7 +195,7 @@ view_key_created_from(Props) ->
     case props:get_value('endkey', Props) of
         [_, CreatedFrom] -> CreatedFrom;
         CreatedFrom -> CreatedFrom
-    end.             
+    end.
 
 -spec create_view_options(api_binary(), cb_context:context()) ->
                                  {'ok', wh_proplist()} |
@@ -207,7 +207,7 @@ create_view_options(OwnerId, Context) ->
     CreatedTo = wh_json:get_integer_value(<<"created_to">>, JObj, TStamp),
     CreatedFrom = wh_json:get_integer_value(<<"created_from">>, JObj, TStamp - MaxRange),
     Diff = CreatedTo - CreatedFrom,
-    if 
+    if
         Diff < 0 ->
             Message = <<"created_from is prior to created_to">>,
             cb_context:add_validation_error(<<"created_from">>
@@ -258,13 +258,14 @@ maybe_add_design_doc(AccountMODb) ->
     end.
 
 -spec cdr_db_name(pos_integer(), cb_context:context()) -> ne_binary().
+-spec cdr_db_name(wh_year(), wh_month(), cb_context:context()) -> ne_binary().
+
 cdr_db_name(Timestamp, Context) ->
     {{Year, Month, _}, _} = calendar:gregorian_seconds_to_datetime(Timestamp),
     #cb_context{req_nouns=ReqNouns} = Context,
     [AccountId] = props:get_value(<<"accounts">>, ReqNouns),
     wh_util:format_account_id(AccountId, Year, Month).
 
--spec cdr_db_name(wh_year(), wh_month(), cb_context:context()) -> ne_binary().
 cdr_db_name(Year, Month, Context) ->
     #cb_context{req_nouns=ReqNouns} = Context,
     [AccountId] = props:get_value(<<"accounts">>, ReqNouns),
