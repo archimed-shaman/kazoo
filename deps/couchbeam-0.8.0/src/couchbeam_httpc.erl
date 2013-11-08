@@ -12,7 +12,7 @@
         clean_mailbox_req/1,
         redirect_url/2]).
 
--define(TIMEOUT, infinity).
+-define(TIMEOUT, 30000).
 
 %% @doc send an ibrowse request
 -type error_possibilities() ::
